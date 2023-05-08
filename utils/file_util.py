@@ -7,7 +7,7 @@ class FileUtil:
         if os.path.exists(file_path):
             print('The file exists')
             # open the file in read-only mode
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 # read the contents of the file
                 text = f.read()
             # print the contents of the file

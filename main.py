@@ -6,16 +6,20 @@ import threading
 import PySimpleGUI as sg
 
 from utils import i18n_util, tts_util, file_util, audio_util
+from enumeration import language_type
 
 # international language configuration
 i18n = i18n_util.I18nUtil()
 print(i18n.language_map)
 
+tts_text_in_English = 'VITS is Awesome!'
+tts_text_in_Chinese = '遥望星空作文独自坐在乡间的小丘上，看着阳光渐渐变暗，听着鸟鸣渐渐变弱，触着清风渐渐变凉。'
+
 # Define the window's contents
 # tts subview
-tts_subview = [[sg.Checkbox("", key="-CHECKBOX_TEXT-", default=True, enable_events=True), sg.Multiline('VITS is Awesome!', key="-INPUT-", expand_x=True, expand_y=True, justification='left', enable_events=True)],
+tts_subview = [[sg.Checkbox("", key="-CHECKBOX_TEXT-", default=True, enable_events=True), sg.Multiline(tts_text_in_Chinese, key="-INPUT-", expand_x=True, expand_y=True, justification='left', enable_events=True)],
                [sg.Checkbox("", key="-CHECKBOX_FILE-", default=False, enable_events=True), sg.Text("Choose a file: "), sg.Input(key="-FILE_PATH-", enable_events=True), sg.FileBrowse(file_types=(("Text Files", "*.txt"),))],
-               [sg.Button(i18n("朗读"), key="-READ-", pad=(40, 0))]]
+               [sg.Button(i18n("朗读"), key="-READ-", pad=(40, 0)), sg.Checkbox(i18n("英语"), key="-CHECKBOX_ENGLISH-", default=True, enable_events=True, pad=(40, 0)), sg.Checkbox(i18n("中文"), key="-CHECKBOX_CHINESE-", default=False, enable_events=True)]]
 
 tts_layout = [[sg.Frame('Text to Speech', tts_subview, size=(750, 400), font='Any 12', title_color='blue')]]
 
@@ -26,25 +30,39 @@ vc_layout = [[sg.T('This is vc')]]
 main_layout = [[sg.TabGroup([[sg.Tab('tts', tts_layout), sg.Tab('asr', asr_layout), sg.Tab('vc', vc_layout)]])]]
 
 
-def generate_audio_and_read(content):
+def generate_English_audio_and_read(content):
     # Generate audio
     audio, sr = tts_util.TTSUtil.generate_audio_from_text(content)
     # Play audio
     audio_util.AudioUtil.play_audio(audio, sr)
 
 
-def readTextFromInputField(content):
+def generate_Chinese_audio_and_read(content):
+    # Generate audio
+    audio, sr = tts_util.TTSUtil.generate_Chinese_audio_from_text(content)
+    # Play audio
+    audio_util.AudioUtil.play_audio(audio, sr)
+
+
+def readTextFromInputField(content, language):
     if content == '':
         sg.popup_ok(i18n('请先输入文本'))
         return
+    print(language == language_type.LanguageType.ENGLISH)
     print("text to be read is ", content)
-    # create a new thread with the function as the target and a parameter
-    t = threading.Thread(target=generate_audio_and_read, args=(content,))
-    # start the thread
-    t.start()
+    if language == language_type.LanguageType.ENGLISH:
+        # create a new thread with the function as the target and a parameter
+        t = threading.Thread(target=generate_English_audio_and_read, args=(content,))
+        # start the thread
+        t.start()
+    elif language == language_type.LanguageType.CHINESE:
+        # create a new thread with the function as the target and a parameter
+        t = threading.Thread(target=generate_Chinese_audio_and_read, args=(content,))
+        # start the thread
+        t.start()
 
 
-def readTextFromLocalFile(file_path):
+def readTextFromLocalFile(file_path, language):
     if file_path == "" or not file_path.endswith(".txt"):
         sg.popup_ok(i18n("请先选择txt文件"))
         return
@@ -52,10 +70,16 @@ def readTextFromLocalFile(file_path):
     if content == '':
         sg.popup_ok(i18n('请先输入文本'))
         return
-    # create a new thread with the function as the target and a parameter
-    t = threading.Thread(target=generate_audio_and_read, args=(content,))
-    # start the thread
-    t.start()
+    if language == language_type.LanguageType.ENGLISH:
+        # create a new thread with the function as the target and a parameter
+        t = threading.Thread(target=generate_English_audio_and_read, args=(content,))
+        # start the thread
+        t.start()
+    elif language == language_type.LanguageType.CHINESE:
+        # create a new thread with the function as the target and a parameter
+        t = threading.Thread(target=generate_Chinese_audio_and_read, args=(content,))
+        # start the thread
+        t.start()
 
 
 # Press the green button in the gutter to run the script.
@@ -70,10 +94,18 @@ if __name__ == '__main__':
         if event == sg.WINDOW_CLOSED or event == 'Quit':
             break
         if event == "-READ-":
+            # text in English to speech
+            lang = None
+            if values["-CHECKBOX_ENGLISH-"]:
+                lang = language_type.LanguageType.ENGLISH
+            elif values["-CHECKBOX_CHINESE-"]:
+                lang = language_type.LanguageType.CHINESE
+            if lang is None:
+                continue
             if values["-CHECKBOX_TEXT-"]:
-                readTextFromInputField(values["-INPUT-"])
+                readTextFromInputField(values["-INPUT-"], lang)
             else:
-                readTextFromLocalFile(values["-FILE_PATH-"])
+                readTextFromLocalFile(values["-FILE_PATH-"], lang)
         elif event == "-CHECKBOX_TEXT-":
             if values["-CHECKBOX_TEXT-"]:
                 window["-CHECKBOX_FILE-"].update(value=False)
@@ -95,6 +127,12 @@ if __name__ == '__main__':
             if values["-FILE_PATH-"] != "" and not values["-CHECKBOX_FILE-"]:
                 window["-CHECKBOX_FILE-"].update(value=True)
                 window["-CHECKBOX_TEXT-"].update(value=False)
+        elif event == "-CHECKBOX_ENGLISH-":
+            window["-CHECKBOX_ENGLISH-"].update(value=True)
+            window["-CHECKBOX_CHINESE-"].update(value=False)
+        elif event == "-CHECKBOX_CHINESE-":
+            window["-CHECKBOX_ENGLISH-"].update(value=False)
+            window["-CHECKBOX_CHINESE-"].update(value=True)
 
     # Finish up by removing from the screen
     window.close()

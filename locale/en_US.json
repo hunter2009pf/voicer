@@ -98,5 +98,7 @@
     "推理时间(ms):": "Infer Time(ms):",
     "朗读": "Read",
     "请先输入文本": "Please input text!",
-    "设置": "Settings"
+    "设置": "Settings",
+    "英语": "English",
+    "中文": "Chinese"
 }
