@@ -1,13 +1,12 @@
-import time
+# this file is from vits project
 import os
 import random
-import numpy as np
 import torch
 import torch.utils.data
 
-import commons 
-from mel_processing import spectrogram_torch
-from utils import load_wav_to_torch, load_filepaths_and_text
+import vits_tool.commons as commons
+from vits_tool.mel_processing import spectrogram_torch
+from utils.vits_util import load_wav_to_torch, load_filepaths_and_text
 from text import text_to_sequence, cleaned_text_to_sequence
 
 

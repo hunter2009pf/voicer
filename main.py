@@ -7,10 +7,9 @@ import torch
 import pyaudio
 import numpy as np
 
-from utils import i18n_util, tts_util, utils
+from utils import i18n_util, tts_util, vits_util
 from models import models
 from text.symbols import symbols
-import IPython.display as ipd
 
 # international language configuration
 i18n = i18n_util.I18nUtil()
@@ -20,7 +19,7 @@ print(i18n.language_map)
 # tts subview
 frame_layout = [[sg.InputText('VITS is Awesome!', key="-INPUT-", size=(750, 200), expand_y=True)],
                 [sg.Button(i18n("朗读"), key="-READ-")]]
-tts_layout = [[sg.Frame('My Frame Title', frame_layout, size=(750, 400), font='Any 12', title_color='blue')]]
+tts_layout = [[sg.Frame('Text to Speech', frame_layout, size=(750, 400), font='Any 12', title_color='blue')]]
 
 asr_layout = [[sg.T('This is asr')]]
 
@@ -33,22 +32,21 @@ def readTextFromInputField(content):
     if content == '':
         return
     print("text to be read is ", content)
-    hps = utils.get_hparams_from_file("./configs/ljs_base.json")
+    hps = vits_util.get_hparams_from_file("./configs/ljs_base.json")
     net_g = models.SynthesizerTrn(
         len(symbols),
         hps.data.filter_length // 2 + 1,
         hps.train.segment_size // hps.data.hop_length,
         **hps.model).cuda()
     _ = net_g.eval()
-    _ = utils.load_checkpoint("./models/pretrained_ljs.pth", net_g, None)
+    _ = vits_util.load_checkpoint("./models/pretrained_ljs.pth", net_g, None)
     stn_tst = tts_util.get_text(content, hps)
     with torch.no_grad():
         x_tst = stn_tst.cuda().unsqueeze(0)
         x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
         audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][
             0, 0].data.cpu().float().numpy()
-    # todo: how to play audio
-    # ipd.display(ipd.Audio(audio, rate=hps.data.sampling_rate, normalize=False))
+    # Play audio
     # Initialize PyAudio
     p = pyaudio.PyAudio()
 

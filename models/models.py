@@ -1,4 +1,4 @@
-import copy
+# this file is from vits project
 import math
 import torch
 from torch import nn
@@ -9,7 +9,7 @@ import vits_tool.modules as modules
 import vits_tool.attentions as attentions
 import monotonic_align as monotonic_align
 
-from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
+from torch.nn import Conv1d, ConvTranspose1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
 from vits_tool.commons import init_weights, get_padding
 
