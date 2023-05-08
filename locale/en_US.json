@@ -96,5 +96,7 @@
     "开始音频转换": "Start Audio Conversion",
     "停止音频转换": "Stop Audio Conversion",
     "推理时间(ms):": "Infer Time(ms):",
-    "朗读": "Read"
+    "朗读": "Read",
+    "请先输入文本": "Please input text!",
+    "设置": "Settings"
 }

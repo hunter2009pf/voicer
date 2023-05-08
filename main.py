@@ -1,15 +1,11 @@
 # This is a sample Python script.
+import threading
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import PySimpleGUI as sg
-import torch
-import pyaudio
-import numpy as np
 
-from utils import i18n_util, tts_util, vits_util
-from models import models
-from text.symbols import symbols
+from utils import i18n_util, tts_util, file_util, audio_util
 
 # international language configuration
 i18n = i18n_util.I18nUtil()
@@ -17,9 +13,11 @@ print(i18n.language_map)
 
 # Define the window's contents
 # tts subview
-frame_layout = [[sg.InputText('VITS is Awesome!', key="-INPUT-", size=(750, 200), expand_y=True)],
-                [sg.Button(i18n("朗读"), key="-READ-")]]
-tts_layout = [[sg.Frame('Text to Speech', frame_layout, size=(750, 400), font='Any 12', title_color='blue')]]
+tts_subview = [[sg.Checkbox("", key="-CHECKBOX_TEXT-", default=True, enable_events=True), sg.Multiline('VITS is Awesome!', key="-INPUT-", expand_x=True, expand_y=True, justification='left', enable_events=True)],
+               [sg.Checkbox("", key="-CHECKBOX_FILE-", default=False, enable_events=True), sg.Text("Choose a file: "), sg.Input(key="-FILE_PATH-", enable_events=True), sg.FileBrowse(file_types=(("Text Files", "*.txt"),))],
+               [sg.Button(i18n("朗读"), key="-READ-", pad=(40, 0))]]
+
+tts_layout = [[sg.Frame('Text to Speech', tts_subview, size=(750, 400), font='Any 12', title_color='blue')]]
 
 asr_layout = [[sg.T('This is asr')]]
 
@@ -28,38 +26,36 @@ vc_layout = [[sg.T('This is vc')]]
 main_layout = [[sg.TabGroup([[sg.Tab('tts', tts_layout), sg.Tab('asr', asr_layout), sg.Tab('vc', vc_layout)]])]]
 
 
+def generate_audio_and_read(content):
+    # Generate audio
+    audio, sr = tts_util.TTSUtil.generate_audio_from_text(content)
+    # Play audio
+    audio_util.AudioUtil.play_audio(audio, sr)
+
+
 def readTextFromInputField(content):
     if content == '':
+        sg.popup_ok(i18n('请先输入文本'))
         return
     print("text to be read is ", content)
-    hps = vits_util.get_hparams_from_file("./configs/ljs_base.json")
-    net_g = models.SynthesizerTrn(
-        len(symbols),
-        hps.data.filter_length // 2 + 1,
-        hps.train.segment_size // hps.data.hop_length,
-        **hps.model).cuda()
-    _ = net_g.eval()
-    _ = vits_util.load_checkpoint("./models/pretrained_ljs.pth", net_g, None)
-    stn_tst = tts_util.get_text(content, hps)
-    with torch.no_grad():
-        x_tst = stn_tst.cuda().unsqueeze(0)
-        x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).cuda()
-        audio = net_g.infer(x_tst, x_tst_lengths, noise_scale=.667, noise_scale_w=0.8, length_scale=1)[0][
-            0, 0].data.cpu().float().numpy()
-    # Play audio
-    # Initialize PyAudio
-    p = pyaudio.PyAudio()
+    # create a new thread with the function as the target and a parameter
+    t = threading.Thread(target=generate_audio_and_read, args=(content,))
+    # start the thread
+    t.start()
 
-    # Open stream for playing audio
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=hps.data.sampling_rate, output=True)
 
-    # Play audio
-    stream.write(audio.astype(np.float32).tobytes())
-
-    # Close stream and PyAudio
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
+def readTextFromLocalFile(file_path):
+    if file_path == "" or not file_path.endswith(".txt"):
+        sg.popup_ok(i18n("请先选择txt文件"))
+        return
+    content = file_util.FileUtil.get_text_from_file(file_path)
+    if content == '':
+        sg.popup_ok(i18n('请先输入文本'))
+        return
+    # create a new thread with the function as the target and a parameter
+    t = threading.Thread(target=generate_audio_and_read, args=(content,))
+    # start the thread
+    t.start()
 
 
 # Press the green button in the gutter to run the script.
@@ -74,7 +70,31 @@ if __name__ == '__main__':
         if event == sg.WINDOW_CLOSED or event == 'Quit':
             break
         if event == "-READ-":
-            readTextFromInputField(values["-INPUT-"])
+            if values["-CHECKBOX_TEXT-"]:
+                readTextFromInputField(values["-INPUT-"])
+            else:
+                readTextFromLocalFile(values["-FILE_PATH-"])
+        elif event == "-CHECKBOX_TEXT-":
+            if values["-CHECKBOX_TEXT-"]:
+                window["-CHECKBOX_FILE-"].update(value=False)
+            else:
+                window["-CHECKBOX_FILE-"].update(value=True)
+        elif event == "-CHECKBOX_FILE-":
+            if values["-CHECKBOX_FILE-"]:
+                window["-CHECKBOX_TEXT-"].update(value=False)
+            else:
+                window["-CHECKBOX_TEXT-"].update(value=True)
+        elif event == "-INPUT-":
+            # after operation on MULTILINE widget, if the content of MULTILINE is not empty and CHECKBOX_TEXT is not
+            # ticked, just tick it
+            if values["-INPUT-"] != "" and not values["-CHECKBOX_TEXT-"]:
+                window["-CHECKBOX_TEXT-"].update(value=True)
+                window["-CHECKBOX_FILE-"].update(value=False)
+        elif event == "-FILE_PATH-":
+            print("file path is ", values["-FILE_PATH-"])
+            if values["-FILE_PATH-"] != "" and not values["-CHECKBOX_FILE-"]:
+                window["-CHECKBOX_FILE-"].update(value=True)
+                window["-CHECKBOX_TEXT-"].update(value=False)
 
     # Finish up by removing from the screen
     window.close()
