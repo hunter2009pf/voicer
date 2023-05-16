@@ -8,6 +8,7 @@ import PySimpleGUI as sg
 from pages import asr_page, vc_page
 from utils import i18n_util, tts_util, file_util, audio_util
 from enumeration import language_type
+from constants import constants
 
 # international language configuration
 i18n = i18n_util.I18nUtil()
@@ -17,7 +18,7 @@ i18n = i18n_util.I18nUtil()
 is_reading = False
 
 # record current tab, only three choices: tts, asr, vc
-current_tab = "tts"
+current_tab = constants.TAB_TTS
 
 vc_page_instance = vc_page.VCPage()
 
@@ -42,11 +43,16 @@ def build_gui():
     tts_layout = [[sg.Frame('Text to Speech', tts_subview, size=(750, 400), font='Any 12', title_color='blue')]]
     # asr subview
     asr_layout = asr_page.ASRPage.build_asr_gui()
-    # vc subview
-    vc_layout = vc_page_instance.build_vc_gui()
-    main_layout = [[sg.TabGroup([[sg.Tab('tts', tts_layout),
-                                  sg.Tab('asr', asr_layout),
-                                  sg.Tab('vc', vc_layout)]], key="-TAB_GROUP-", enable_events=True)]]
+    # rvc subview
+    rvc_layout = vc_page_instance.build_vc_gui()
+    # quickvc subview
+    quickvc_layout = [[sg.Text('quick voice conversion')]]
+    main_layout = [[sg.TabGroup([[sg.Tab(constants.TAB_TTS, tts_layout),
+                                  sg.Tab(constants.TAB_ASR, asr_layout),
+                                  sg.Tab(constants.TAB_RVC, rvc_layout),
+                                 sg.Tab(constants.TAB_QUICK_VC, quickvc_layout)]],
+                                key="-TAB_GROUP-",
+                                enable_events=True)]]
     return main_layout
 
 
@@ -196,10 +202,12 @@ if __name__ == '__main__':
             print(f'Tab switched to: {values["-TAB_GROUP-"]}')
             current_tab = values["-TAB_GROUP-"]
 
-        if current_tab == "asr":
+        if current_tab == constants.TAB_ASR:
             asr_page.ASRPage.handle_event(window, event, values)
-        elif current_tab == "vc":
+        elif current_tab == constants.TAB_RVC:
             vc_page_instance.handle_event(window, event, values)
+        elif current_tab == constants.TAB_QUICK_VC:
+            print("transfer event to quick vc")
 
     # Finish up by removing from the screen
     window.close()
