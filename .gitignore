@@ -1,2 +1,4 @@
 .idea/
+models/
 models/*.pth
+bert/*.pt

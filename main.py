@@ -5,6 +5,7 @@ import threading
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import PySimpleGUI as sg
 
+from pages import asr_page, vc_page
 from utils import i18n_util, tts_util, file_util, audio_util
 from enumeration import language_type
 
@@ -15,8 +16,14 @@ i18n = i18n_util.I18nUtil()
 # TTS is working or not
 is_reading = False
 
+# record current tab, only three choices: tts, asr, vc
+current_tab = "tts"
+
+vc_page_instance = vc_page.VCPage()
+
 
 def build_gui():
+    global vc_page_instance
     tts_text_in_English = 'VITS is Awesome!'
     tts_text_in_Chinese = '遥望星空作文独自坐在乡间的小丘上，看着阳光渐渐变暗，听着鸟鸣渐渐变弱，触着清风渐渐变凉。'
 
@@ -33,12 +40,13 @@ def build_gui():
                     sg.Checkbox(i18n("中文"), key="-CHECKBOX_CHINESE-", default=False, enable_events=True)]]
 
     tts_layout = [[sg.Frame('Text to Speech', tts_subview, size=(750, 400), font='Any 12', title_color='blue')]]
-
-    asr_layout = [[sg.T('This is asr')]]
-
-    vc_layout = [[sg.T('This is vc')]]
-
-    main_layout = [[sg.TabGroup([[sg.Tab('tts', tts_layout), sg.Tab('asr', asr_layout), sg.Tab('vc', vc_layout)]])]]
+    # asr subview
+    asr_layout = asr_page.ASRPage.build_asr_gui()
+    # vc subview
+    vc_layout = vc_page_instance.build_vc_gui()
+    main_layout = [[sg.TabGroup([[sg.Tab('tts', tts_layout),
+                                  sg.Tab('asr', asr_layout),
+                                  sg.Tab('vc', vc_layout)]], key="-TAB_GROUP-", enable_events=True)]]
     return main_layout
 
 
@@ -126,8 +134,10 @@ def readTextFromLocalFile(file_path, language):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+    # Create directories
+    file_util.FileUtil.create_data_storage_dir()
     # Create the window
-    window = sg.Window('Voicer', build_gui(), size=(800, 450), resizable=True)
+    window = sg.Window('Voicer', build_gui(), size=(800, 560), resizable=True)
 
     # Display and interact with the Window using an Event Loop
     while True:
@@ -181,6 +191,15 @@ if __name__ == '__main__':
         elif event == "-CHECKBOX_CHINESE-":
             window["-CHECKBOX_ENGLISH-"].update(value=False)
             window["-CHECKBOX_CHINESE-"].update(value=True)
+
+        if event == '-TAB_GROUP-':
+            print(f'Tab switched to: {values["-TAB_GROUP-"]}')
+            current_tab = values["-TAB_GROUP-"]
+
+        if current_tab == "asr":
+            asr_page.ASRPage.handle_event(window, event, values)
+        elif current_tab == "vc":
+            vc_page_instance.handle_event(window, event, values)
 
     # Finish up by removing from the screen
     window.close()
