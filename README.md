@@ -28,7 +28,9 @@ C:\Users\<user>\.cache\whisper
 7. Select the Advanced tab.
 
 # set up proxy for conda
+```commandline
 conda config --set proxy_servers.http http://127.0.0.1:7890
 conda config --set proxy_servers.https https://127.0.0.1:7890
 conda config --remove-key proxy_servers.http
 conda config --remove-key proxy_servers.https
+```
