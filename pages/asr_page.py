@@ -72,7 +72,7 @@ class ASRPage:
         # start transcribing audio
         button_asr = sg.Button(i18n("语音转文本"), key="-AUDIO_TO_TEXT-", button_color=('black', 'white'))
         # text widget to show asr result
-        label_text_result = sg.Text("", key="-TEXT_RESULT-", expand_y=True, expand_x=True, background_color="white", text_color="black")
+        label_text_result = sg.Multiline("", key="-TEXT_RESULT-", expand_y=True, expand_x=True, background_color="white", text_color="black")
         asr_layout = [[label_work_mode, radio_online, radio_offline],
                       [label_record, btn_record],
                       [label_choose_file, input_file_path, browse_audio_file],
